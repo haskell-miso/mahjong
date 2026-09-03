@@ -19,7 +19,6 @@ executable app
   main-is:              Main.hs
   other-modules:        Model
                         Logic
-                        AI
                         TileView
                         Sound
                         Styles

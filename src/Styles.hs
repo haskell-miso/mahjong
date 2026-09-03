@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
--- | The look of the table: deep felt, ivory tiles, gold accents, glass
--- panels, and springy transitions everywhere.
+-- | The look of the board: deep felt, chunky 3D ivory tiles, gold
+-- accents, glass panels, and springy transitions everywhere.
 -----------------------------------------------------------------------------
 module Styles (skin) where
 -----------------------------------------------------------------------------
@@ -14,14 +14,8 @@ skin = sheet_
   [ selector_ ":root"
       [ "--gold"      =: "#e8c96a"
       , "--gold-deep" =: "#c9a227"
-      , "--felt"      =: "#11543f"
-      , "--ht" =: "clamp(46px, 7.4vmin, 66px)"
-      , "--rt" =: "clamp(20px, 3.4vmin, 30px)"
-      , "--ot" =: "clamp(17px, 2.9vmin, 25px)"
-      , "--mt" =: "clamp(17px, 2.9vmin, 25px)"
-      , "--dt" =: "clamp(22px, 3.6vmin, 32px)"
-      , "--wt" =: "clamp(30px, 5vmin, 44px)"
-      , "--side" =: "min(96vmin, 860px, calc(100vh - var(--ht) * 1.55 - 84px), 100vw)"
+      , "--st"  =: "min(56px, calc((100vw - 48px) / 15.6), calc((100vh - 170px) / 11.9))"
+      , "--sth" =: "calc(var(--st) * 1.36)"
       ]
   , selector_ "*" [ CSS.boxSizing "border-box" ]
   , selector_ "html, body"
@@ -44,8 +38,9 @@ skin = sheet_
       , CSS.alignItems "center"
       , CSS.justifyContent "space-between"
       , CSS.padding "10px 18px"
-      , CSS.zIndex 20
+      , CSS.zIndex 90
       , CSS.pointerEvents "none"
+      , CSS.gap "12px"
       ]
   , selector_ ".topbar > *" [ CSS.pointerEvents "auto" ]
   , selector_ ".brand"
@@ -54,13 +49,28 @@ skin = sheet_
       , CSS.fontSize "15px"
       , "color" =: "var(--gold)"
       , CSS.textShadow "0 1px 10px rgba(0,0,0,.6)"
+      , CSS.whiteSpace "nowrap"
       ]
   , selector_ ".brand small"
       [ "color" =: "#9fb8a9"
       , CSS.fontWeight "500"
       , CSS.letterSpacing ".08em"
       ]
-  , selector_ ".tbBtns" [ CSS.display "flex", CSS.gap "8px" ]
+  , selector_ ".hudStats"
+      [ CSS.display "flex"
+      , CSS.gap "clamp(8px, 2vw, 26px)"
+      , CSS.alignItems "center"
+      , CSS.fontSize "13px"
+      , CSS.letterSpacing ".1em"
+      , "color" =: "#9fb8a9"
+      , CSS.whiteSpace "nowrap"
+      ]
+  , selector_ ".hudStats b"
+      [ "color" =: "#e9e4d6"
+      , "font-variant-numeric" =: "tabular-nums"
+      , CSS.fontWeight "700"
+      ]
+  , selector_ ".tbBtns" [ CSS.display "flex", CSS.gap "8px", CSS.flexWrap "wrap", CSS.justifyContent "flex-end" ]
   , selector_ ".iconBtn"
       [ CSS.background "rgba(6,26,20,.55)"
       , CSS.border "1px solid rgba(255,255,255,.12)"
@@ -72,41 +82,34 @@ skin = sheet_
       , CSS.cursor "pointer"
       , CSS.backdropFilter "blur(10px)"
       , CSS.transition "transform .15s ease, background .2s ease, border-color .2s ease"
+      , CSS.whiteSpace "nowrap"
       ]
   , selector_ ".iconBtn:hover"
       [ CSS.background "rgba(20,60,45,.75)"
       , "border-color" =: "rgba(232,201,106,.55)"
       , CSS.transform "translateY(-1px)"
       ]
-  -- table geometry ---------------------------------------------------------
-  , selector_ ".app"
+  -- board ------------------------------------------------------------------
+  , selector_ ".boardWrap"
       [ CSS.position "fixed"
-      , "inset" =: "44px 0 calc(var(--ht) * 1.55 + 26px) 0"
+      , "inset" =: "56px 0 12px 0"
       , CSS.display "flex"
       , CSS.alignItems "center"
       , CSS.justifyContent "center"
       ]
-  , selector_ ".table"
+  , selector_ ".board"
       [ CSS.position "relative"
-      , CSS.width "var(--side)"
-      , CSS.height "var(--side)"
+      , CSS.width "calc(var(--st) * 15 + 30px)"
+      , CSS.height "calc(var(--sth) * 8 + 36px)"
       ]
-  , selector_ ".seat"
-      [ CSS.position "absolute"
-      , "inset" =: "0"
-      , CSS.pointerEvents "none"
-      ]
-  , selector_ ".seat1" [ CSS.transform "rotate(-90deg)" ]
-  , selector_ ".seat2" [ CSS.transform "rotate(180deg)" ]
-  , selector_ ".seat3" [ CSS.transform "rotate(90deg)" ]
   -- tiles ------------------------------------------------------------------
   , selector_ ".tile"
       [ CSS.position "relative"
-      , CSS.width "var(--rt)"
+      , CSS.width "var(--st)"
       , "aspect-ratio" =: "60 / 84"
-      , CSS.background "linear-gradient(165deg, #fdfbf4 0%, #f4eddb 55%, #e9dfc4 100%)"
-      , CSS.borderRadius "12% / 9%"
-      , CSS.boxShadow tileShadow
+      , CSS.background tileFaceBg
+      , CSS.borderRadius "10% / 7.5%"
+      , CSS.boxShadow flatShadow
       , "flex" =: "0 0 auto"
       ]
   , selector_ ".tile svg"
@@ -118,178 +121,35 @@ skin = sheet_
   , selector_ ".tile svg text"
       [ CSS.fontFamily "'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif CJK JP', 'Noto Serif SC', serif"
       ]
-  , selector_ ".tile.back"
-      [ CSS.background "linear-gradient(165deg, #2fa273 0%, #187a52 55%, #0e5c3c 100%)"
-      , CSS.boxShadow backShadow
-      ]
-  , selector_ ".tile.back::after"
-      [ "content" =: "''"
-      , CSS.position "absolute"
-      , "inset" =: "14%"
-      , CSS.borderRadius "14%"
-      , CSS.border "1.5px solid rgba(255,255,255,.22)"
-      ]
-  -- rivers, opponent hands, melds -------------------------------------------
-  -- starts just below the center panel (which spans 31.5%..68.5%)
-  , selector_ ".river"
+  , selector_ ".stile"
       [ CSS.position "absolute"
-      , CSS.top "70%"
-      , CSS.left "50%"
-      , CSS.transform "translateX(-50%)"
-      , CSS.display "grid"
-      , CSS.gridTemplateColumns "repeat(6, var(--rt))"
-      , CSS.gap "4px"
-      , CSS.width "calc(6 * var(--rt) + 20px)"
-      ]
-  , selector_ ".river .tile" [ CSS.animation "popIn .3s cubic-bezier(.2,.9,.3,1.3) backwards" ]
-  , selector_ ".tile.hot"
-      [ CSS.animation "hotPulse 1.1s ease-in-out infinite"
-      , CSS.zIndex 5
-      ]
-  , selector_ ".oh"
-      [ CSS.position "absolute"
-      , CSS.bottom "1%"
-      , CSS.left "50%"
-      , CSS.transform "translateX(-50%)"
-      , CSS.display "flex"
-      , CSS.gap "3px"
-      ]
-  , selector_ ".oh .tile" [ CSS.width "var(--ot)" ]
-  , selector_ ".meldRow"
-      [ CSS.position "absolute"
-      , CSS.bottom "1%"
-      , CSS.right "1%"
-      , CSS.display "flex"
-      , CSS.gap "8px"
-      ]
-  , selector_ ".meld" [ CSS.display "flex", CSS.gap "2px" ]
-  , selector_ ".meld .tile"
-      [ CSS.width "var(--mt)"
+      , CSS.width "var(--st)"
+      , CSS.height "var(--sth)"
+      , "aspect-ratio" =: "auto"
+      , CSS.boxShadow sideStack
       , CSS.animation "popIn .35s cubic-bezier(.2,.9,.3,1.3) backwards"
+      , CSS.transition "filter .25s ease, box-shadow .15s ease"
       ]
-  -- center panel -------------------------------------------------------------
-  , selector_ ".center"
-      [ CSS.position "absolute"
-      , CSS.left "50%"
-      , CSS.top "50%"
-      , CSS.transform "translate(-50%, -50%)"
-      , CSS.width "37%"
-      , CSS.height "37%"
-      , CSS.borderRadius (CSS.px 18)
-      , CSS.background "linear-gradient(160deg, rgba(6,30,22,.72), rgba(3,16,12,.78))"
-      , CSS.border "1px solid rgba(255,255,255,.08)"
-      , CSS.boxShadow "0 18px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08)"
-      , CSS.backdropFilter "blur(12px)"
-      , CSS.display "flex"
-      , CSS.alignItems "center"
-      , CSS.justifyContent "center"
+  , selector_ ".stile.free" [ CSS.cursor "pointer" ]
+  , selector_ ".stile.free:hover"
+      [ CSS.filter "brightness(1.08)"
+      , CSS.boxShadow (sideStack <> ", 0 0 14px rgba(232,201,106,.35)")
       ]
-  , selector_ ".centerInner"
-      [ CSS.display "flex"
-      , CSS.flexDirection "column"
-      , CSS.alignItems "center"
-      , CSS.justifyContent "space-between"
-      , CSS.height "100%"
-      , CSS.width "100%"
-      , CSS.padding "14% 6%"
+  , selector_ ".stile.locked"
+      [ CSS.filter "brightness(.78) saturate(.92)" ]
+  , selector_ ".stile.sel"
+      [ CSS.filter "brightness(1.12)"
+      , CSS.boxShadow (sideStack <> ", 0 0 0 3px var(--gold), 0 0 22px rgba(232,201,106,.8)")
       ]
-  , selector_ ".centerLow"
-      [ CSS.display "flex"
-      , CSS.flexDirection "column"
-      , CSS.alignItems "center"
-      , CSS.gap "clamp(2px, .8vmin, 8px)"
+  , selector_ ".stile.hintT" [ "animation" =: "hintA 1s ease-in-out infinite" ]
+  , selector_ ".stile.hintT.alt" [ "animation-name" =: "hintA2" ]
+  , selector_ ".stile.shakeT" [ "animation" =: "shakeA .4s ease" ]
+  , selector_ ".stile.shakeT.alt" [ "animation-name" =: "shakeA2" ]
+  , selector_ ".stile.vanish"
+      [ "animation" =: "vanishA .45s ease forwards"
+      , CSS.pointerEvents "none"
       ]
-  , selector_ ".roundBadge"
-      [ CSS.fontSize "clamp(15px, 2.6vmin, 24px)"
-      , CSS.fontWeight "800"
-      , CSS.letterSpacing ".2em"
-      , "color" =: "var(--gold)"
-      , CSS.textShadow "0 1px 12px rgba(0,0,0,.7)"
-      ]
-  , selector_ ".wallInfo"
-      [ CSS.fontSize "clamp(10px, 1.7vmin, 13px)"
-      , "color" =: "#9fb8a9"
-      , CSS.letterSpacing ".12em"
-      ]
-  , selector_ ".doraBox"
-      [ CSS.display "flex"
-      , CSS.alignItems "center"
-      , CSS.gap "8px"
-      , CSS.marginTop "2px"
-      ]
-  , selector_ ".doraBox .tile" [ CSS.width "var(--dt)" ]
-  , selector_ ".doraLabel"
-      [ CSS.fontSize "clamp(10px, 1.7vmin, 13px)"
-      , "color" =: "#9fb8a9"
-      , CSS.letterSpacing ".2em"
-      ]
-  , selector_ ".scorePlate"
-      [ CSS.position "absolute"
-      , CSS.display "flex"
-      , CSS.alignItems "center"
-      , CSS.gap "5px"
-      , CSS.padding "2px 8px"
-      , CSS.borderRadius (CSS.px 999)
-      , CSS.background "rgba(255,255,255,.05)"
-      , CSS.border "1px solid transparent"
-      , CSS.fontSize "clamp(10px, 1.9vmin, 14px)"
-      , CSS.transition "background .3s ease, border-color .3s ease, box-shadow .3s ease"
-      , CSS.whiteSpace "nowrap"
-      ]
-  , selector_ ".scorePlate.active"
-      [ CSS.background "rgba(232,201,106,.14)"
-      , "border-color" =: "rgba(232,201,106,.6)"
-      , CSS.animation "glowPulse 1.6s ease-in-out infinite"
-      ]
-  , selector_ ".plate0" [ CSS.bottom "5px", CSS.left "50%", CSS.transform "translateX(-50%)" ]
-  , selector_ ".plate1" [ CSS.right "5px", CSS.top "50%", CSS.transform "translateY(-50%)" ]
-  , selector_ ".plate2" [ CSS.top "5px", CSS.left "50%", CSS.transform "translateX(-50%)" ]
-  , selector_ ".plate3" [ CSS.left "5px", CSS.top "50%", CSS.transform "translateY(-50%)" ]
-  , selector_ ".plateWind"
-      [ CSS.fontWeight "800"
-      , CSS.fontSize "clamp(12px, 2.2vmin, 17px)"
-      , "color" =: "#cfe0d5"
-      ]
-  , selector_ ".plateWind.dealerWind" [ "color" =: "var(--gold)" ]
-  , selector_ ".plateScore" [ "color" =: "#e9e4d6", "font-variant-numeric" =: "tabular-nums" ]
-  -- human hand ----------------------------------------------------------------
-  , selector_ ".hand"
-      [ CSS.position "fixed"
-      , CSS.bottom "max(12px, env(safe-area-inset-bottom))"
-      , CSS.left "50%"
-      , CSS.transform "translateX(-50%)"
-      , CSS.display "flex"
-      , CSS.alignItems "flex-end"
-      , CSS.gap "clamp(3px, .7vmin, 7px)"
-      , CSS.zIndex 15
-      ]
-  , selector_ ".hand .tile"
-      [ CSS.width "var(--ht)"
-      , CSS.transition "transform .18s cubic-bezier(.2,.9,.3,1.4), box-shadow .18s ease, filter .18s ease"
-      ]
-  , selector_ ".hand .tile.deal" [ CSS.animation "dealIn .5s cubic-bezier(.2,.9,.3,1.2) backwards" ]
-  , selector_ ".hand .tile.live" [ CSS.cursor "pointer" ]
-  , selector_ ".hand .tile.live:hover"
-      [ CSS.transform "translateY(-12px)"
-      , CSS.boxShadow hoverShadow
-      , CSS.filter "brightness(1.05)"
-      ]
-  , selector_ ".hand .tile.drawnTile"
-      [ CSS.marginLeft "clamp(10px, 2vmin, 22px)"
-      , CSS.animation "drawnIn .35s cubic-bezier(.2,.9,.3,1.3)"
-      , CSS.boxShadow drawnGlow
-      ]
-  , selector_ ".actionBar"
-      [ CSS.position "fixed"
-      , CSS.bottom "calc(var(--ht) * 1.55 + 34px)"
-      , CSS.left "50%"
-      , CSS.transform "translateX(-50%)"
-      , CSS.display "flex"
-      , CSS.gap "12px"
-      , CSS.zIndex 25
-      , CSS.animation "panelIn .3s cubic-bezier(.2,.9,.25,1.2) backwards"
-      ]
-  -- buttons -------------------------------------------------------------------
+  -- buttons -----------------------------------------------------------------
   , selector_ ".btn"
       [ CSS.padding "11px 26px"
       , CSS.borderRadius (CSS.px 999)
@@ -315,55 +175,29 @@ skin = sheet_
       , CSS.border "1px solid rgba(255,255,255,.2)"
       , CSS.backdropFilter "blur(8px)"
       ]
-  , selector_ ".btn.ron" [ CSS.background "linear-gradient(180deg, #e46a6a, #a12626)", "color" =: "#fff", CSS.border "1px solid #ffb3b3" ]
-  , selector_ ".btn.pon" [ CSS.background "linear-gradient(180deg, #6aa4e4, #2657a1)", "color" =: "#fff", CSS.border "1px solid #b3d0ff" ]
-  , selector_ ".btn.chi" [ CSS.background "linear-gradient(180deg, #6fc794, #23784a)", "color" =: "#fff", CSS.border "1px solid #b9e8cb" ]
-  , selector_ ".btn.kan" [ CSS.background "linear-gradient(180deg, #b98ae0, #6d3ba1)", "color" =: "#fff", CSS.border "1px solid #dcc3f5" ]
-  -- claim bar -----------------------------------------------------------------
-  , selector_ ".claimBar"
+  -- stuck toast ---------------------------------------------------------------
+  , selector_ ".toastBar"
       [ CSS.position "fixed"
-      , CSS.bottom "calc(var(--ht) * 1.55 + 34px)"
+      , CSS.bottom "26px"
       , CSS.left "50%"
       , CSS.transform "translateX(-50%)"
       , CSS.display "flex"
       , CSS.alignItems "center"
-      , CSS.gap "12px"
-      , CSS.zIndex 30
-      , CSS.padding "12px 16px"
+      , CSS.gap "14px"
+      , CSS.zIndex 60
+      , CSS.padding "12px 18px"
       , CSS.borderRadius (CSS.px 18)
-      , CSS.background "rgba(8,26,20,.7)"
-      , CSS.border "1px solid rgba(232,201,106,.35)"
+      , CSS.background "rgba(8,26,20,.8)"
+      , CSS.border "1px solid rgba(232,201,106,.4)"
       , CSS.backdropFilter "blur(12px)"
       , CSS.boxShadow "0 18px 50px rgba(0,0,0,.5)"
       , CSS.animation "panelIn .28s cubic-bezier(.2,.9,.25,1.2) backwards"
       ]
-  , selector_ ".chiTiles" [ CSS.display "flex", CSS.gap "2px", CSS.marginLeft "8px" ]
-  , selector_ ".chiTiles .tile" [ CSS.width "26px" ]
-  -- callouts ------------------------------------------------------------------
-  , selector_ ".callout"
-      [ CSS.position "absolute"
-      , CSS.zIndex 40
-      , CSS.fontSize "clamp(30px, 5.4vmin, 48px)"
-      , CSS.fontWeight "900"
-      , CSS.letterSpacing ".12em"
-      , "color" =: "#ffdf80"
-      , CSS.textShadow "0 3px 20px rgba(0,0,0,.85), 0 0 34px rgba(255,200,60,.5)"
-      , CSS.animation "calloutAnim 1.5s ease forwards"
-      , CSS.pointerEvents "none"
+  , selector_ ".toastMsg"
+      [ CSS.letterSpacing ".08em"
+      , "color" =: "#f0e6c8"
+      , CSS.fontWeight "600"
       ]
-  -- identical twin animation so toggling the class replays the callout
-  -- (positioning avoids transform: the animation keyframes own that property)
-  , selector_ ".callout.alt" [ "animation-name" =: "calloutAnim2" ]
-  , selector_ ".callout.c0"
-      [ CSS.bottom "15%", CSS.left "0", CSS.right "0", CSS.textAlign "center" ]
-  , selector_ ".callout.c1"
-      [ CSS.right "12%", CSS.top "0", CSS.bottom "0"
-      , CSS.display "flex", CSS.alignItems "center" ]
-  , selector_ ".callout.c2"
-      [ CSS.top "15%", CSS.left "0", CSS.right "0", CSS.textAlign "center" ]
-  , selector_ ".callout.c3"
-      [ CSS.left "12%", CSS.top "0", CSS.bottom "0"
-      , CSS.display "flex", CSS.alignItems "center" ]
   -- overlays ------------------------------------------------------------------
   , selector_ ".overlay"
       [ CSS.position "fixed"
@@ -373,18 +207,18 @@ skin = sheet_
       , CSS.justifyContent "center"
       , CSS.background "rgba(2,10,8,.6)"
       , CSS.backdropFilter "blur(7px)"
-      , CSS.zIndex 50
+      , CSS.zIndex 100
       , CSS.animation "overlayIn .25s ease"
       ]
   , selector_ ".panel"
       [ CSS.background "linear-gradient(165deg, rgba(14,40,31,.92), rgba(6,20,15,.95))"
       , CSS.border "1px solid rgba(232,201,106,.4)"
       , CSS.borderRadius (CSS.px 22)
-      , CSS.padding "30px 40px"
+      , CSS.padding "30px 44px"
       , CSS.boxShadow "0 40px 100px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.1)"
       , CSS.textAlign "center"
       , CSS.animation "panelIn .4s cubic-bezier(.2,.9,.25,1.2) backwards"
-      , CSS.maxWidth "min(92vw, 640px)"
+      , CSS.maxWidth "min(92vw, 560px)"
       ]
   , selector_ ".winTitle"
       [ CSS.fontSize "clamp(26px, 5vmin, 40px)"
@@ -398,55 +232,19 @@ skin = sheet_
       [ "color" =: "#9fb8a9"
       , CSS.letterSpacing ".1em"
       , CSS.fontSize "14px"
-      , CSS.marginBottom "16px"
-      ]
-  , selector_ ".winTiles"
-      [ CSS.display "flex"
-      , CSS.justifyContent "center"
-      , CSS.flexWrap "wrap"
-      , CSS.gap "4px"
-      , CSS.marginBottom "16px"
-      ]
-  , selector_ ".winTiles .tile"
-      [ CSS.width "var(--wt)"
-      , CSS.animation "flipIn .45s cubic-bezier(.2,.9,.3,1.2) backwards"
-      ]
-  , selector_ ".winTiles .tile.winning"
-      [ CSS.boxShadow drawnGlow ]
-  , selector_ ".yakuList"
-      [ CSS.display "flex"
-      , CSS.flexDirection "column"
-      , CSS.gap "4px"
-      , CSS.marginBottom "14px"
-      ]
-  , selector_ ".yakuRow"
-      [ CSS.display "flex"
-      , CSS.justifyContent "space-between"
-      , CSS.gap "40px"
-      , CSS.fontSize "15px"
-      , "color" =: "#dfe8e0"
-      , CSS.animation "riseIn .4s ease backwards"
-      ]
-  , selector_ ".yakuRow b" [ "color" =: "var(--gold)" ]
-  , selector_ ".points"
-      [ CSS.fontSize "clamp(24px, 4.6vmin, 36px)"
-      , CSS.fontWeight "900"
-      , "color" =: "#fff"
-      , CSS.textShadow "0 0 26px rgba(232,201,106,.6)"
       , CSS.marginBottom "18px"
-      , "font-variant-numeric" =: "tabular-nums"
-      , CSS.animation "riseIn .4s ease backwards"
       ]
-  , selector_ ".rankRow"
+  , selector_ ".statRow"
       [ CSS.display "flex"
       , CSS.justifyContent "space-between"
       , CSS.gap "60px"
       , CSS.padding "8px 4px"
-      , CSS.fontSize "17px"
+      , CSS.fontSize "16px"
       , CSS.borderBottom "1px solid rgba(255,255,255,.08)"
       , CSS.animation "riseIn .4s ease backwards"
       ]
-  , selector_ ".rankRow.human b" [ "color" =: "var(--gold)" ]
+  , selector_ ".statRow b" [ "color" =: "var(--gold)", "font-variant-numeric" =: "tabular-nums" ]
+  , selector_ ".panel .btn" [ CSS.marginTop "22px" ]
   -- title screen ---------------------------------------------------------------
   , selector_ ".titleWrap"
       [ CSS.position "fixed"
@@ -456,7 +254,7 @@ skin = sheet_
       , CSS.alignItems "center"
       , CSS.justifyContent "center"
       , CSS.gap "10px"
-      , CSS.zIndex 60
+      , CSS.zIndex 110
       , CSS.background feltBackground
       , CSS.overflow "hidden"
       ]
@@ -499,52 +297,24 @@ skin = sheet_
       , CSS.animation "riseIn .7s .45s ease backwards"
       ]
   -- keyframes ------------------------------------------------------------------
-  , keyframes_ "dealIn"
-      [ from_ [ CSS.transform "translateY(46px) rotate(5deg) scale(.7)", CSS.opacity 0 ]
-      , to_   [ CSS.transform "translateY(0) rotate(0) scale(1)", CSS.opacity 1 ]
-      ]
   , keyframes_ "popIn"
       [ from_ [ CSS.transform "scale(.4) translateY(-12px)", CSS.opacity 0 ]
       , at (pct 65) [ CSS.transform "scale(1.07)", CSS.opacity 1 ]
       , to_ [ CSS.transform "scale(1) translateY(0)", CSS.opacity 1 ]
       ]
-  , keyframes_ "drawnIn"
-      [ from_ [ CSS.transform "translateY(-26px) scale(.85)", CSS.opacity 0 ]
-      , to_   [ CSS.transform "translateY(0) scale(1)", CSS.opacity 1 ]
+  , keyframes_ "vanishA"
+      [ from_ [ CSS.transform "scale(1)", CSS.opacity 1 ]
+      , to_   [ CSS.transform "scale(1.3) translateY(-30px)", CSS.opacity 0 ]
       ]
-  , keyframes_ "calloutAnim"
-      [ from_ [ CSS.transform "scale(.2)", CSS.opacity 0 ]
-      , at (pct 14) [ CSS.transform "scale(1.18)", CSS.opacity 1 ]
-      , at (pct 24) [ CSS.transform "scale(1)" ]
-      , at (pct 75) [ CSS.opacity 1 ]
-      , to_ [ CSS.opacity 0, CSS.transform "translateY(-14px)" ]
-      ]
-  , keyframes_ "calloutAnim2"
-      [ from_ [ CSS.transform "scale(.2)", CSS.opacity 0 ]
-      , at (pct 14) [ CSS.transform "scale(1.18)", CSS.opacity 1 ]
-      , at (pct 24) [ CSS.transform "scale(1)" ]
-      , at (pct 75) [ CSS.opacity 1 ]
-      , to_ [ CSS.opacity 0, CSS.transform "translateY(-14px)" ]
-      ]
-  , keyframes_ "glowPulse"
-      [ from_ [ CSS.boxShadow "0 0 0 rgba(232,201,106,0)" ]
-      , at (pct 50) [ CSS.boxShadow "0 0 18px rgba(232,201,106,.55)" ]
-      , to_ [ CSS.boxShadow "0 0 0 rgba(232,201,106,0)" ]
-      ]
-  , keyframes_ "hotPulse"
-      [ from_ [ CSS.boxShadow "0 0 0 2px rgba(232,201,106,.9), 0 4px 10px rgba(0,0,0,.45)" ]
-      , at (pct 50) [ CSS.boxShadow "0 0 16px 4px rgba(232,201,106,.6), 0 4px 10px rgba(0,0,0,.45)" ]
-      , to_ [ CSS.boxShadow "0 0 0 2px rgba(232,201,106,.9), 0 4px 10px rgba(0,0,0,.45)" ]
-      ]
+  , keyframes_ "shakeA" shakeStops
+  , keyframes_ "shakeA2" shakeStops
+  , keyframes_ "hintA" (hintStops sideStack)
+  , keyframes_ "hintA2" (hintStops sideStack)
   , keyframes_ "overlayIn"
       [ from_ [ CSS.opacity 0 ], to_ [ CSS.opacity 1 ] ]
   , keyframes_ "panelIn"
       [ from_ [ CSS.transform "translateY(26px) scale(.92)", CSS.opacity 0 ]
       , to_   [ CSS.transform "translateY(0) scale(1)", CSS.opacity 1 ]
-      ]
-  , keyframes_ "flipIn"
-      [ from_ [ CSS.transform "rotateY(90deg) scale(.8)", CSS.opacity 0 ]
-      , to_   [ CSS.transform "rotateY(0) scale(1)", CSS.opacity 1 ]
       ]
   , keyframes_ "riseIn"
       [ from_ [ CSS.transform "translateY(18px)", CSS.opacity 0 ]
@@ -556,6 +326,23 @@ skin = sheet_
       , to_ [ CSS.transform "translateY(0) rotate(var(--fr, 0deg))" ]
       ]
   ]
+  where
+    shakeStops =
+      [ from_ [ CSS.transform "translateX(0)" ]
+      , at (pct 20) [ CSS.transform "translateX(-6px)" ]
+      , at (pct 40) [ CSS.transform "translateX(5px)" ]
+      , at (pct 60) [ CSS.transform "translateX(-4px)" ]
+      , at (pct 80) [ CSS.transform "translateX(3px)" ]
+      , to_ [ CSS.transform "translateX(0)" ]
+      ]
+    hintStops stack =
+      [ from_ [ CSS.boxShadow stack ]
+      , at (pct 50)
+          [ CSS.boxShadow (stack <> ", 0 0 0 3px rgba(232,201,106,.9), 0 0 24px 6px rgba(232,201,106,.6)")
+          , CSS.filter "brightness(1.12)"
+          ]
+      , to_ [ CSS.boxShadow stack ]
+      ]
 -----------------------------------------------------------------------------
 feltBackground :: MisoString
 feltBackground = mconcat
@@ -563,14 +350,19 @@ feltBackground = mconcat
   , "radial-gradient(140% 120% at 50% 50%, #17604a 0%, #0f4736 48%, #082b20 100%)"
   ]
 -----------------------------------------------------------------------------
-tileShadow :: MisoString
-tileShadow = "0 2px 0 #c9bc9c, 0 5px 12px rgba(0,0,0,.5), inset 0 1px 1px rgba(255,255,255,.9)"
+tileFaceBg :: MisoString
+tileFaceBg = "linear-gradient(165deg, #fdfbf4 0%, #f4eddb 55%, #e9dfc4 100%)"
 -----------------------------------------------------------------------------
-backShadow :: MisoString
-backShadow = "0 2px 0 #0a3f2a, 0 5px 12px rgba(0,0,0,.5), inset 0 1px 1px rgba(255,255,255,.25)"
+-- | Flat shadow for decorative tiles (title screen).
+flatShadow :: MisoString
+flatShadow = "0 2px 0 #c9bc9c, 0 5px 12px rgba(0,0,0,.5), inset 0 1px 1px rgba(255,255,255,.9)"
 -----------------------------------------------------------------------------
-hoverShadow :: MisoString
-hoverShadow = "0 2px 0 #c9bc9c, 0 14px 26px rgba(0,0,0,.55), inset 0 1px 1px rgba(255,255,255,.9)"
------------------------------------------------------------------------------
-drawnGlow :: MisoString
-drawnGlow = "0 2px 0 #c9bc9c, 0 5px 12px rgba(0,0,0,.5), 0 0 18px rgba(232,201,106,.75), inset 0 1px 1px rgba(255,255,255,.9)"
+-- | Chunky 3D side for board tiles: ridge to the bottom-left plus a soft
+-- drop shadow, so stacked layers read as depth.
+sideStack :: MisoString
+sideStack = mconcat
+  [ "-1px 1px 0 #d3c6a5, -2px 2px 0 #cbbc97, -3px 3px 0 #c3b189, "
+  , "-4px 4px 0 #baa77c, -5px 5px 0 #b09b6e, "
+  , "-8px 10px 18px rgba(0,0,0,.55), "
+  , "inset 0 1px 1px rgba(255,255,255,.9)"
+  ]

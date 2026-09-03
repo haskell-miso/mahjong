@@ -68,6 +68,13 @@ soundInit = [js|
         if (name === 'clack') {
           burst(t, 0.06, 2600, 900, 0.7);
           tone(190, 'sine', t, 0.002, 0.5, 0.09);
+        } else if (name === 'match') {
+          burst(t, 0.05, 2600, 900, 0.5);
+          tone(659.25, 'sine', t, 0.005, 0.35, 0.25);
+          tone(987.77, 'sine', t + 0.07, 0.005, 0.3, 0.35);
+        } else if (name === 'deny') {
+          tone(110, 'square', t, 0.004, 0.3, 0.11);
+          tone(92, 'square', t + 0.07, 0.004, 0.25, 0.13);
         } else if (name === 'draw') {
           burst(t, 0.11, 700, 2400, 0.22);
         } else if (name === 'call') {

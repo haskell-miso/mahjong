@@ -15,7 +15,6 @@ import qualified Miso.Html.Property as HP
 import qualified Miso.Svg.Element as S
 import qualified Miso.Svg.Property as SP
 -----------------------------------------------------------------------------
-import           Logic (dragonChar, windChar)
 import           Model
 -----------------------------------------------------------------------------
 -- Ink palette
@@ -66,8 +65,16 @@ faceOf (DragonTile White) =
       , SP.stroke_ "#9db2d8", SP.strokeWidth_ "2"
       ]
   ]
-faceOf (DragonTile Green) = [ glyph 30 58 42 green (dragonChar Green) ]
-faceOf (DragonTile Red)   = [ glyph 30 58 42 red (dragonChar Red) ]
+faceOf (DragonTile Green) = [ glyph 30 58 42 green "發" ]
+faceOf (DragonTile Red)   = [ glyph 30 58 42 red "中" ]
+faceOf (FlowerTile n) =
+  [ glyph 30 56 36 red (["梅", "蘭", "菊", "竹"] !! (n - 1))
+  , glyph 49 18 12 green (ms n)
+  ]
+faceOf (SeasonTile n) =
+  [ glyph 30 56 36 ink (["春", "夏", "秋", "冬"] !! (n - 1))
+  , glyph 49 18 12 red (ms n)
+  ]
 -----------------------------------------------------------------------------
 glyph :: Int -> Int -> Int -> MisoString -> MisoString -> View c model action
 glyph x y size color str =
@@ -87,6 +94,12 @@ windLetter East  = "E"
 windLetter South = "S"
 windLetter West  = "W"
 windLetter North = "N"
+-----------------------------------------------------------------------------
+windChar :: Wind -> MisoString
+windChar East  = "東"
+windChar South = "南"
+windChar West  = "西"
+windChar North = "北"
 -----------------------------------------------------------------------------
 -- * Pin (circle) faces
 -----------------------------------------------------------------------------

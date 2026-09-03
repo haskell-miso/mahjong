@@ -1,20 +1,26 @@
 # 🀄 miso-mahjong
 
-Riichi-style **Mahjong** — you vs. three CPU opponents — built with
-[miso](https://github.com/dmjio/miso) and compiled to WebAssembly.
+**Mahjong solitaire** — clear the classic turtle by matching free pairs —
+built with [miso](https://github.com/dmjio/miso) and compiled to
+WebAssembly.
 
 ![title screen](docs/title.png)
 
-![table](docs/table.png)
+![board](docs/board.png)
 
-- 🎴 Full 136-tile set, hand-drawn SVG tile faces
-- 🧠 Shanten-based CPU opponents that pon, chi, kan, tsumo and ron
-- 🀄 Chi / Pon / Kan / Ron / Tsumo claims with a dedicated claim bar
-- 🌸 Dora, yaku recognition (tanyao, yakuhai, toitoi, chiitoitsu, honitsu, chinitsu, kokushi, …) and scoring
+- 🐢 The classic 144-tile turtle: 5 layers, head, and double tail
+- 🎴 Hand-drawn SVG tile faces, including flowers 梅蘭菊竹 and seasons 春夏秋冬
+- ✅ Every deal is **guaranteed solvable** (dealt by playing the board in reverse) — and so is every shuffle
+- 💡 Hint, undo, and shuffle, plus a timer and live move counter
 - 🔊 Sound effects synthesized live with the Web Audio API (zero audio assets)
-- ✨ Modern felt-table look: glass panels, gold accents, springy CSS transitions
+- ✨ Chunky 3D tiles on deep felt: gold accents, glass panels, springy CSS transitions
 
-Play an **East round** (4 hands); highest score takes the crown.
+## Rules
+
+Click two matching tiles to remove them. A tile is *free* when nothing
+rests on top of it and at least one of its left/right sides is open.
+Flowers match any flower; seasons match any season; every other tile
+matches its identical twin. Clear all 144 tiles to win.
 
 ## Build (WASM)
 
@@ -35,10 +41,3 @@ make clean
 
 CI builds with nix and deploys `public/` to GitHub Pages on pushes to
 `master`.
-
-## Rules notes
-
-Simplified riichi ruleset: East round only, no riichi declarations, no
-furiten, open kan is not claimable (concealed kan only), and a hand with
-no yaku still wins as a 1-han "chicken hand" (HK style). Dealer wins
-score 1.5×; tsumo splits the payment three ways.

@@ -1,224 +1,174 @@
 -----------------------------------------------------------------------------
--- | Pure mahjong rules: tile set, shuffling, shanten, win detection,
--- yaku recognition and scoring.
+-- | Mahjong solitaire rules: the classic turtle layout, tile freedom,
+-- matching, and guaranteed-solvable deals.
 -----------------------------------------------------------------------------
 module Logic where
 -----------------------------------------------------------------------------
-import           Data.List (sort, sortOn, nub)
-import qualified Data.IntMap.Strict as IM
+import           Data.List (sortOn, groupBy)
+import           Data.Function (on)
 -----------------------------------------------------------------------------
 import           Miso.Random (replicateRM)
-import           Miso.String (MisoString)
+import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
 import           Model
 -----------------------------------------------------------------------------
--- * Tile set
+-- * Tile set (144 = 34 kinds x4 + 4 flowers + 4 seasons)
 -----------------------------------------------------------------------------
--- | All 136 tiles (each of the 34 kinds four times).
 allTiles :: [Tile]
-allTiles = concatMap (replicate 4) tileKinds
------------------------------------------------------------------------------
--- | The 34 distinct tile kinds in canonical order.
-tileKinds :: [Tile]
-tileKinds =
-  [ Suited s n | s <- [Man, Pin, Sou], n <- [1..9] ] ++
-  [ WindTile w | w <- [East ..] ] ++
-  [ DragonTile d | d <- [White ..] ]
------------------------------------------------------------------------------
--- | Canonical index (0..33) of a tile kind.
-tileIx :: Tile -> Int
-tileIx (Suited s n)    = 9 * fromEnum s + n - 1
-tileIx (WindTile w)    = 27 + fromEnum w
-tileIx (DragonTile d)  = 31 + fromEnum d
------------------------------------------------------------------------------
-ixTile :: Int -> Tile
-ixTile i
-  | i < 27    = Suited (toEnum (i `div` 9)) (i `mod` 9 + 1)
-  | i < 31    = WindTile (toEnum (i - 27))
-  | otherwise = DragonTile (toEnum (i - 31))
------------------------------------------------------------------------------
--- | Histogram over tile kind indices.
-countsOf :: [Tile] -> IM.IntMap Int
-countsOf = IM.fromListWith (+) . map (\t -> (tileIx t, 1))
------------------------------------------------------------------------------
-isTerminalOrHonor :: Tile -> Bool
-isTerminalOrHonor (Suited _ n) = n == 1 || n == 9
-isTerminalOrHonor _            = True
------------------------------------------------------------------------------
--- | The tile a dora indicator points at (its successor).
-doraOf :: Tile -> Tile
-doraOf (Suited s n)   = Suited s (if n == 9 then 1 else n + 1)
-doraOf (WindTile w)   = WindTile (if w == North then East else succ w)
-doraOf (DragonTile d) = DragonTile (if d == Red then White else succ d)
------------------------------------------------------------------------------
--- | Fisher–Yates-equivalent shuffle keyed on miso's splitmix32 PRNG.
-shuffleIO :: IO [Tile]
-shuffleIO = do
-  keys <- replicateRM (length allTiles)
-  pure (map snd (sortOn fst (zip keys allTiles)))
------------------------------------------------------------------------------
--- * Shanten
------------------------------------------------------------------------------
--- | Number of tiles away from tenpai (-1 = complete hand). Considers
--- standard hands, seven pairs, and thirteen orphans (the latter two only
--- for fully concealed hands).
-shanten :: [Tile] -> Int -> Int
-shanten tiles fixedMelds = minimum $
-  [ standardShanten (countsOf tiles) fixedMelds ] ++
-  [ chiitoiShanten (countsOf tiles) | fixedMelds == 0 ] ++
-  [ kokushiShanten (countsOf tiles) | fixedMelds == 0 ]
------------------------------------------------------------------------------
--- | Complete winning hand?
-isComplete :: [Tile] -> Int -> Bool
-isComplete tiles fixedMelds = shanten tiles fixedMelds == (-1)
------------------------------------------------------------------------------
--- | Standard-form shanten: @8 - 2*melds - partials - pair@, maximized over
--- all decompositions, capped at four blocks total.
-standardShanten :: IM.IntMap Int -> Int -> Int
-standardShanten cnt0 fixed = 8 - best
+allTiles =
+  concatMap (replicate 4) standardKinds
+    ++ [ FlowerTile n | n <- [1 .. 4] ]
+    ++ [ SeasonTile n | n <- [1 .. 4] ]
   where
-    best = go 0 cnt0 fixed 0 False
-    val m d p = 2 * m + min d (4 - m) + (if p then 1 else 0)
-    go i cnt m d pair
-      | m > 4     = val 4 0 pair
-      | i > 33    = val m d pair
-      | c == 0    = go (i + 1) cnt m d pair
-      | otherwise = maximum (skip : options)
-      where
-        c = IM.findWithDefault 0 i cnt
-        c1 = IM.findWithDefault 0 (i + 1) cnt
-        c2 = IM.findWithDefault 0 (i + 2) cnt
-        suitedRun = i < 27 && i `mod` 9 <= 6
-        suitedNeighbor = i < 27 && i `mod` 9 <= 7
-        dec k n = IM.adjust (subtract n) k
-        skip = go (i + 1) (IM.delete i cnt) m d pair
-        options = concat
-          [ [ go i (dec i 3 cnt) (m + 1) d pair | c >= 3 ]
-          , [ go i (dec (i + 2) 1 (dec (i + 1) 1 (dec i 1 cnt))) (m + 1) d pair
-            | suitedRun, c1 > 0, c2 > 0 ]
-          , [ go i (dec i 2 cnt) m d True | c >= 2, not pair ]
-          , [ go i (dec i 2 cnt) m (d + 1) pair | c >= 2 ]
-          , [ go i (dec (i + 1) 1 (dec i 1 cnt)) m (d + 1) pair
-            | suitedNeighbor, c1 > 0 ]
-          , [ go i (dec (i + 2) 1 (dec i 1 cnt)) m (d + 1) pair
-            | suitedRun, c2 > 0 ]
-          ]
+    standardKinds =
+      [ Suited s n | s <- [Man, Pin, Sou], n <- [1 .. 9] ] ++
+      [ WindTile w | w <- [East ..] ] ++
+      [ DragonTile d | d <- [White ..] ]
 -----------------------------------------------------------------------------
-chiitoiShanten :: IM.IntMap Int -> Int
-chiitoiShanten cnt = 6 - pairs + max 0 (7 - kinds)
-  where
-    pairs = length [ () | c <- IM.elems cnt, c >= 2 ]
-    kinds = IM.size cnt
+-- | Tiles match when their keys are equal: flowers all share one key,
+-- seasons another, everything else matches identical kinds only.
+matchKey :: Tile -> Int
+matchKey (Suited s n)   = 9 * fromEnum s + n - 1
+matchKey (WindTile w)   = 27 + fromEnum w
+matchKey (DragonTile d) = 31 + fromEnum d
+matchKey (FlowerTile _) = 40
+matchKey (SeasonTile _) = 41
 -----------------------------------------------------------------------------
-kokushiShanten :: IM.IntMap Int -> Int
-kokushiShanten cnt = 13 - kinds - (if hasPair then 1 else 0)
-  where
-    orphanIxs = [ tileIx t | t <- tileKinds, isTerminalOrHonor t ]
-    counts = [ IM.findWithDefault 0 i cnt | i <- orphanIxs ]
-    kinds = length [ () | c <- counts, c >= 1 ]
-    hasPair = any (>= 2) counts
+matches :: Tile -> Tile -> Bool
+matches a b = matchKey a == matchKey b
 -----------------------------------------------------------------------------
--- * Yaku + scoring
+-- * The turtle layout (144 positions, in half-tile units)
 -----------------------------------------------------------------------------
--- | Winning-hand evaluation context.
-data WinInfo = WinInfo
-  { wiTsumo    :: Bool
-  , wiSeatWind :: Wind
-  , wiConcealed:: [Tile]  -- ^ concealed part incl. winning tile
-  , wiMelds    :: [Meld]
-  , wiDora     :: [Tile]  -- ^ actual dora tiles (not indicators)
-  , wiDealer   :: Bool
-  }
------------------------------------------------------------------------------
--- | Recognized yaku (name, han) plus the point value of the hand.
-scoreWin :: WinInfo -> ([(MisoString, Int)], Int)
-scoreWin WinInfo{..} = (baseYaku ++ doraHan, points)
-  where
-    allTs = wiConcealed ++ concatMap meldTiles wiMelds
-    cnt = countsOf wiConcealed
-    closed = all concealedMeld wiMelds
-    concealedMeld (Meld (MeldKan True) _) = True
-    concealedMeld _ = False
-
-    isChiitoi = null wiMelds && chiitoiShanten cnt == (-1)
-    isKokushi = null wiMelds && kokushiShanten cnt == (-1)
-
-    -- all triplets: concealed counts split into one pair + triplets/quads,
-    -- and no chi melds (counts-based check is exact for toitoi)
-    isToitoi = not isChiitoi && not isKokushi
-      && all (\(Meld k _) -> k /= MeldChi) wiMelds
-      && length [ () | c <- IM.elems cnt, c == 2 ] == 1
-      && all (\c -> c == 2 || c == 3 || c == 4) (IM.elems cnt)
-
-    suits = nub [ s | Suited s _ <- allTs ]
-    hasHonors = any isHonor allTs
-    isHonor (Suited _ _) = False
-    isHonor _ = True
-
-    tripleOf t =
-      IM.findWithDefault 0 (tileIx t) cnt >= 3 ||
-      any (\md -> meldType md /= MeldChi && t `elem` meldTiles md) wiMelds
-
-    yaku = concat
-      [ [ ("Kokushi Musou 国士無双", 13) | isKokushi ]
-      , [ ("Menzen Tsumo 門前清自摸和", 1) | wiTsumo, closed, not isKokushi ]
-      , [ ("Chiitoitsu 七対子", 2) | isChiitoi ]
-      , [ ("Toitoi 対々和", 2) | isToitoi ]
-      , [ ("Tanyao 断幺九", 1) | not (any isTerminalOrHonor allTs) ]
-      , [ ("Yakuhai 白", 1) | tripleOf (DragonTile White), not isKokushi ]
-      , [ ("Yakuhai 發", 1) | tripleOf (DragonTile Green), not isKokushi ]
-      , [ ("Yakuhai 中", 1) | tripleOf (DragonTile Red), not isKokushi ]
-      , [ ("Round Wind 東", 1) | tripleOf (WindTile East), not isKokushi ]
-      , [ ("Seat Wind " <> windChar wiSeatWind, 1)
-        | wiSeatWind /= East, tripleOf (WindTile wiSeatWind), not isKokushi ]
-      , [ ("Chinitsu 清一色", 6) | length suits == 1, not hasHonors ]
-      , [ ("Honitsu 混一色", 3) | length suits == 1, hasHonors, not isKokushi ]
-      ]
-
-    doraCount = length [ () | t <- allTs, t `elem` wiDora ]
-    doraHan = [ ("Dora ドラ", doraCount) | doraCount > 0 ]
-
-    baseYaku = if null yaku then [("Chicken Hand 雞胡", 1)] else yaku
-    han = sum (map snd (baseYaku ++ doraHan))
-
-    base
-      | han >= 13 = 32000
-      | han >= 8  = 16000
-      | han >= 6  = 12000
-      | han == 5  = 8000
-      | han == 4  = 7700
-      | han == 3  = 3900
-      | han == 2  = 2000
-      | otherwise = 1000
-    points
-      | wiDealer  = roundTo100 (base * 3 `div` 2)
-      | otherwise = base
------------------------------------------------------------------------------
-roundTo100 :: Int -> Int
-roundTo100 n = ((n + 99) `div` 100) * 100
------------------------------------------------------------------------------
-windChar :: Wind -> MisoString
-windChar East  = "東"
-windChar South = "南"
-windChar West  = "西"
-windChar North = "北"
------------------------------------------------------------------------------
-dragonChar :: Dragon -> MisoString
-dragonChar White = "白"
-dragonChar Green = "發"
-dragonChar Red   = "中"
------------------------------------------------------------------------------
--- | All distinct (a, b) pairs from the hand forming a run with tile @t@.
-chiOptions :: [Tile] -> Tile -> [(Tile, Tile)]
-chiOptions hs (Suited s n) = nub
-  [ (Suited s a, Suited s b)
-  | (a, b) <- [ (n - 2, n - 1), (n - 1, n + 1), (n + 1, n + 2) ]
-  , a >= 1, b <= 9
-  , Suited s a `elem` hs
-  , Suited s b `elem` hs
+-- | The classic turtle: an 87-tile base, then 6x6, 4x4, 2x2 decks and a
+-- single crown tile centered over the middle.
+turtle :: [Pos]
+turtle = concat
+  [ row 0 0  [1 .. 12]
+  , row 2 0  [3 .. 10]
+  , row 4 0  [2 .. 11]
+  , row 6 0  [1 .. 12]
+  , row 8 0  [1 .. 12]
+  , row 10 0 [2 .. 11]
+  , row 12 0 [3 .. 10]
+  , row 14 0 [1 .. 12]
+  , [ (0, 7, 0), (26, 7, 0), (28, 7, 0) ] -- head + double tail
+  , [ (2 * c, y2, 1) | y2 <- [2, 4 .. 12], c <- [4 .. 9] ]
+  , [ (2 * c, y2, 2) | y2 <- [4, 6 .. 10], c <- [5 .. 8] ]
+  , [ (2 * c, y2, 3) | y2 <- [6, 8],       c <- [6, 7] ]
+  , [ (13, 7, 4) ]                        -- the crown, half-offset
   ]
-chiOptions _ _ = []
+  where
+    row y2 z cs = [ (2 * c, y2, z) | c <- cs ]
 -----------------------------------------------------------------------------
--- | Sorted insertion helper for hands.
-sortHand :: [Tile] -> [Tile]
-sortHand = sort
+-- * Freedom
+-----------------------------------------------------------------------------
+-- | Two 2x2 footprints overlap when both half-unit deltas are below 2.
+overlaps :: Pos -> Pos -> Bool
+overlaps (x, y, _) (x', y', _) = abs (x - x') < 2 && abs (y - y') < 2
+-----------------------------------------------------------------------------
+-- | A position is free when nothing rests on it and at least one of its
+-- left/right sides is open.
+isFreePos :: [Pos] -> Pos -> Bool
+isFreePos ps p@(x, y, z) =
+  not covered && not (blockedL && blockedR)
+  where
+    covered  = any (\p'@(_, _, z') -> z' == z + 1 && overlaps p p') ps
+    sideAt dx = any (\(x', y', z') -> z' == z && x' == x + dx && abs (y' - y) < 2) ps
+    blockedL = sideAt (-2)
+    blockedR = sideAt 2
+-----------------------------------------------------------------------------
+isFree :: [BTile] -> BTile -> Bool
+isFree bts bt = isFreePos (map btPos bts) (btPos bt)
+-----------------------------------------------------------------------------
+freeTiles :: [BTile] -> [BTile]
+freeTiles bts = filter (isFree bts) bts
+-----------------------------------------------------------------------------
+-- | All matching pairs among the currently free tiles.
+freePairs :: [BTile] -> [(BTile, BTile)]
+freePairs bts =
+  [ (a, b)
+  | (a : rest) <- tailsOf (freeTiles bts)
+  , b <- rest
+  , matches (btKind a) (btKind b)
+  ]
+  where
+    tailsOf [] = []
+    tailsOf l@(_ : t) = l : tailsOf t
+-----------------------------------------------------------------------------
+-- * Dealing
+-----------------------------------------------------------------------------
+-- | Group the tile multiset into matching pairs (every match-group has an
+-- even population, so this is total).
+pairsOf :: [Tile] -> [(Tile, Tile)]
+pairsOf ts = concatMap chunk (groupBy ((==) `on` matchKey) (sortOn matchKey ts))
+  where
+    chunk (a : b : rest) = (a, b) : chunk rest
+    chunk _ = []
+-----------------------------------------------------------------------------
+shuffleList :: [a] -> IO [a]
+shuffleList xs = do
+  keys <- replicateRM (length xs)
+  pure (map snd (sortOn fst (zip keys xs)))
+-----------------------------------------------------------------------------
+-- | Deal by playing the game in reverse: repeatedly pull two random /free/
+-- positions off the full board and assign them the next matching pair.
+-- The removal order is itself a solution, so every deal is winnable.
+dealInto :: [Pos] -> [Tile] -> IO (Maybe [BTile])
+dealInto positions tiles = do
+  prs <- shuffleList (pairsOf tiles)
+  go prs positions []
+  where
+    go [] _ acc = pure (Just acc)
+    go ((t1, t2) : rest) remaining acc = do
+      let free = filter (isFreePos remaining) remaining
+      if length free < 2
+        then pure Nothing
+        else do
+          rs <- replicateRM 2
+          case rs of
+            [r1, r2] -> do
+              let p1 = free !! floor (r1 * fromIntegral (length free))
+                  free' = filter (/= p1) free
+                  p2 = free' !! floor (r2 * fromIntegral (length free'))
+              go rest
+                 (filter (\p -> p /= p1 && p /= p2) remaining)
+                 (BTile p1 t1 : BTile p2 t2 : acc)
+            _ -> pure Nothing
+-----------------------------------------------------------------------------
+-- | A fresh, solvable turtle deal.
+genDeal :: IO [BTile]
+genDeal = withRetries 60 (dealInto turtle allTiles) fallback
+  where
+    fallback = do
+      ts <- shuffleList allTiles
+      pure (zipWith BTile turtle ts)
+-----------------------------------------------------------------------------
+-- | Re-deal the remaining tiles over the remaining positions, keeping the
+-- result solvable whenever the generator finds an ordering.
+shuffleRemaining :: [BTile] -> IO [BTile]
+shuffleRemaining bts =
+  withRetries 60 (dealInto ps ts) fallback
+  where
+    ps = map btPos bts
+    ts = map btKind bts
+    fallback = do
+      ts' <- shuffleList ts
+      pure (zipWith BTile ps ts')
+-----------------------------------------------------------------------------
+withRetries :: Int -> IO (Maybe a) -> IO a -> IO a
+withRetries n gen fallback
+  | n <= 0 = fallback
+  | otherwise = do
+      r <- gen
+      case r of
+        Just x -> pure x
+        Nothing -> withRetries (n - 1) gen fallback
+-----------------------------------------------------------------------------
+-- * Display helpers
+-----------------------------------------------------------------------------
+formatTime :: Int -> MisoString
+formatTime s = pad (s `div` 60) <> ":" <> pad (s `mod` 60)
+  where
+    pad n
+      | n < 10 = "0" <> ms n
+      | otherwise = ms n
