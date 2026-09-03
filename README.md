@@ -1,8 +1,10 @@
-# 🀄 miso-mahjong
+# 🀄 mahjong
 
 **Mahjong solitaire** — clear the classic turtle by matching free pairs —
 built with [miso](https://github.com/dmjio/miso) and compiled to
 WebAssembly.
+
+**Play it live: <https://mahjong.haskell-miso.org>**
 
 ![title screen](docs/title.png)
 
