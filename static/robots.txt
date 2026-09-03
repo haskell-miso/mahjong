@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://haskell-miso.github.io/miso-mahjong/sitemap.xml

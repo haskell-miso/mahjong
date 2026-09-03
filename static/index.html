@@ -1,16 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover">
-    <title>🀄 miso-mahjong</title>
+
+    <title>Mahjong Solitaire — Free Online Turtle Puzzle · Miso Mahjong</title>
+    <meta name="description" content="Play mahjong solitaire free in your browser. Clear the classic 144-tile turtle by matching free pairs — every deal is guaranteed solvable. Hints, undo, smart shuffle. No ads, no download, works on mobile.">
+    <link rel="canonical" href="https://haskell-miso.github.io/miso-mahjong/">
+    <meta name="theme-color" content="#0f4736">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🀄</text></svg>">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Miso Mahjong">
+    <meta property="og:title" content="Mahjong Solitaire — Free Online Turtle Puzzle">
+    <meta property="og:description" content="Clear the classic 144-tile turtle by matching free pairs. Every deal is guaranteed solvable. Free, no ads, works on mobile.">
+    <meta property="og:url" content="https://haskell-miso.github.io/miso-mahjong/">
+    <meta property="og:image" content="https://haskell-miso.github.io/miso-mahjong/social.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="The mahjong solitaire turtle board of Miso Mahjong">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Mahjong Solitaire — Free Online Turtle Puzzle">
+    <meta name="twitter:description" content="Clear the classic 144-tile turtle by matching free pairs. Every deal is guaranteed solvable. Free, no ads, works on mobile.">
+    <meta name="twitter:image" content="https://haskell-miso.github.io/miso-mahjong/social.jpg">
+
+    <!-- Performance -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="modulepreload" href="index.js">
+    <link rel="modulepreload" href="ghc_wasm_jsffi.js">
+    <link rel="preload" href="app.wasm" as="fetch" crossorigin="anonymous">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "Miso Mahjong Solitaire",
+      "url": "https://haskell-miso.github.io/miso-mahjong/",
+      "image": "https://haskell-miso.github.io/miso-mahjong/social.jpg",
+      "description": "Free online mahjong solitaire. Clear the classic 144-tile turtle by matching free pairs — every deal is guaranteed solvable.",
+      "genre": ["Puzzle", "Tile-matching game"],
+      "playMode": "SinglePlayer",
+      "gamePlatform": "Web browser",
+      "applicationCategory": "Game",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires JavaScript and WebAssembly",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "author": { "@type": "Person", "name": "David M. Johnson" }
+    }
+    </script>
+
     <style>
       html, body { margin: 0; padding: 0; background: #082b20; }
+      #loading {
+        position: fixed; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; text-align: center;
+        gap: 10px; padding: 24px; color: #cfe0d5;
+        font-family: 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+        background:
+          radial-gradient(120% 90% at 50% 12%, rgba(255,255,255,.07), rgba(0,0,0,0) 55%),
+          radial-gradient(140% 120% at 50% 50%, #17604a 0%, #0f4736 48%, #082b20 100%);
+      }
+      #loading h1 {
+        margin: 0; color: #e8c96a; font-size: clamp(28px, 6vmin, 48px);
+        letter-spacing: .12em; font-weight: 800;
+      }
+      #loading p { max-width: 560px; line-height: 1.6; margin: 4px 0; font-size: 15px; }
+      #loading .dim { color: #7f9a8c; font-size: 13px; }
+      #loading .pulse { animation: lpulse 1.2s ease-in-out infinite; }
+      @keyframes lpulse { 0%, 100% { opacity: .45 } 50% { opacity: 1 } }
     </style>
   </head>
 
   <body>
+    <div id="loading">
+      <h1>🀄 Mahjong Solitaire</h1>
+      <p>Clear the classic 144-tile turtle by matching pairs of free tiles.
+        A tile is free when nothing rests on top of it and its left or right
+        side is open. Flowers match any flower, seasons match any season,
+        and every other tile matches its identical twin.</p>
+      <p>Every deal is guaranteed solvable — and so is every shuffle. Play
+        free in your browser with hints, unlimited undo, and a timer. No
+        ads, no downloads, mobile friendly.</p>
+      <p class="dim pulse">setting up the tiles…</p>
+      <noscript><p><strong>Miso Mahjong requires JavaScript and
+        WebAssembly.</strong> Enable JavaScript to play.</p></noscript>
+    </div>
 
     <script src="index.js" type="module"></script>
 

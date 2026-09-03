@@ -19,4 +19,5 @@ const { instance } = await WebAssembly.instantiateStreaming(fetch("app.wasm"), {
 Object.assign(instance_exports, instance.exports);
 
 wasi.initialize(instance);
+document.getElementById("loading")?.remove();
 await instance.exports.hs_start(globalThis.example);
