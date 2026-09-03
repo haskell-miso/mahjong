@@ -130,9 +130,10 @@ skin = sheet_
       , CSS.border "1.5px solid rgba(255,255,255,.22)"
       ]
   -- rivers, opponent hands, melds -------------------------------------------
+  -- starts just below the center panel (which spans 31.5%..68.5%)
   , selector_ ".river"
       [ CSS.position "absolute"
-      , CSS.top "58.5%"
+      , CSS.top "70%"
       , CSS.left "50%"
       , CSS.transform "translateX(-50%)"
       , CSS.display "grid"
