@@ -33,3 +33,17 @@ executable app
                         RecordWildCards
                         TupleSections
                         ViewPatterns
+
+test-suite spec
+  if arch(wasm32)
+    buildable:          False
+  type:                 exitcode-stdio-1.0
+  main-is:              Spec.hs
+  hs-source-dirs:       tests, src
+  other-modules:        Model
+                        Logic
+  build-depends:        base, miso
+  ghc-options:          -Wall
+  default-language:     GHC2021
+  default-extensions:   LambdaCase
+                        OverloadedStrings

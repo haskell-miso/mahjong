@@ -6,7 +6,11 @@ module Styles (skin) where
 -----------------------------------------------------------------------------
 import           Miso ((=:))
 import qualified Miso.CSS as CSS
-import           Miso.CSS (StyleSheet, sheet_, selector_, keyframes_, from_, to_, at, pct)
+import           Miso.CSS
+  ( StyleSheet, sheet_, selector_, keyframes_, from_, to_, at, pct
+  , media_, rule_, screen_, and_, maxWidth_, maxHeight_, px
+  )
+import           Miso.CSS.Types (MediaQuery(..))
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 skin :: StyleSheet
@@ -14,7 +18,7 @@ skin = sheet_
   [ selector_ ":root"
       [ "--gold"      =: "#e8c96a"
       , "--gold-deep" =: "#c9a227"
-      , "--st"  =: "min(56px, calc((100vw - 48px) / 15.6), calc((100vh - 170px) / 11.9))"
+      , "--st"  =: "min(56px, calc((100vw - 48px) / 15.6), calc((100dvh - 170px) / 11.9))"
       , "--sth" =: "calc(var(--st) * 1.36)"
       ]
   , selector_ "*" [ CSS.boxSizing "border-box" ]
@@ -29,6 +33,8 @@ skin = sheet_
       , CSS.fontFamily "'Avenir Next', 'Segoe UI', system-ui, sans-serif"
       , CSS.userSelect "none"
       , "-webkit-tap-highlight-color" =: "transparent"
+      , "-webkit-text-size-adjust" =: "100%"
+      , "overscroll-behavior" =: "none"
       ]
   -- top chrome ------------------------------------------------------------
   , selector_ ".topbar"
@@ -83,11 +89,7 @@ skin = sheet_
       , CSS.backdropFilter "blur(10px)"
       , CSS.transition "transform .15s ease, background .2s ease, border-color .2s ease"
       , CSS.whiteSpace "nowrap"
-      ]
-  , selector_ ".iconBtn:hover"
-      [ CSS.background "rgba(20,60,45,.75)"
-      , "border-color" =: "rgba(232,201,106,.55)"
-      , CSS.transform "translateY(-1px)"
+      , "touch-action" =: "manipulation"
       ]
   -- board ------------------------------------------------------------------
   , selector_ ".boardWrap"
@@ -129,12 +131,9 @@ skin = sheet_
       , CSS.boxShadow sideStack
       , CSS.animation "popIn .35s cubic-bezier(.2,.9,.3,1.3) backwards"
       , CSS.transition "filter .25s ease, box-shadow .15s ease"
+      , "touch-action" =: "manipulation"
       ]
   , selector_ ".stile.free" [ CSS.cursor "pointer" ]
-  , selector_ ".stile.free:hover"
-      [ CSS.filter "brightness(1.08)"
-      , CSS.boxShadow (sideStack <> ", 0 0 14px rgba(232,201,106,.35)")
-      ]
   , selector_ ".stile.locked"
       [ CSS.filter "brightness(.78) saturate(.92)" ]
   , selector_ ".stile.sel"
@@ -162,13 +161,27 @@ skin = sheet_
       , CSS.cursor "pointer"
       , CSS.boxShadow "0 6px 18px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.6)"
       , CSS.transition "transform .15s ease, box-shadow .15s ease, filter .15s ease"
-      ]
-  , selector_ ".btn:hover"
-      [ CSS.transform "translateY(-2px)"
-      , CSS.boxShadow "0 10px 26px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.6)"
-      , CSS.filter "brightness(1.07)"
+      , "touch-action" =: "manipulation"
       ]
   , selector_ ".btn:active" [ CSS.transform "translateY(0) scale(.98)" ]
+  -- hover effects only on devices that actually hover (no sticky
+  -- highlights after taps on touch screens)
+  , media_ (MediaQuery "(hover: hover)")
+      [ rule_ ".iconBtn:hover"
+          [ CSS.background "rgba(20,60,45,.75)"
+          , "border-color" =: "rgba(232,201,106,.55)"
+          , CSS.transform "translateY(-1px)"
+          ]
+      , rule_ ".btn:hover"
+          [ CSS.transform "translateY(-2px)"
+          , CSS.boxShadow "0 10px 26px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.6)"
+          , CSS.filter "brightness(1.07)"
+          ]
+      , rule_ ".stile.free:hover"
+          [ CSS.filter "brightness(1.08)"
+          , CSS.boxShadow (sideStack <> ", 0 0 14px rgba(232,201,106,.35)")
+          ]
+      ]
   , selector_ ".btn.ghost"
       [ CSS.background "rgba(10,32,25,.6)"
       , "color" =: "#cfe0d5"
@@ -295,6 +308,46 @@ skin = sheet_
       , CSS.fontSize "12px"
       , CSS.letterSpacing ".14em"
       , CSS.animation "riseIn .7s .45s ease backwards"
+      ]
+  -- responsive ----------------------------------------------------------------
+  -- compact phones: two-row chrome, icon-only buttons, tighter board margins
+  , media_ (screen_ `and_` maxWidth_ (px 740))
+      [ rule_ ":root"
+          [ "--st" =: "min(56px, calc((100vw - 10px) / 15.4), calc((100dvh - 128px) / 12.1))" ]
+      , rule_ ".topbar"
+          [ CSS.flexWrap "wrap"
+          , CSS.padding "6px 8px"
+          , CSS.justifyContent "center"
+          , "row-gap" =: "4px"
+          , CSS.gap "8px"
+          ]
+      , rule_ ".btnLabel" [ CSS.display "none" ]
+      , rule_ ".iconBtn" [ CSS.padding "7px 11px", CSS.fontSize "15px" ]
+      , rule_ ".hudStats" [ CSS.fontSize "12px" ]
+      , rule_ ".boardWrap" [ "inset" =: "86px 0 6px 0" ]
+      , rule_ ".board"
+          [ CSS.width "calc(var(--st) * 15 + 8px)"
+          , CSS.height "calc(var(--sth) * 8 + 34px)"
+          ]
+      , rule_ ".panel" [ CSS.padding "22px 26px" ]
+      , rule_ ".statRow" [ CSS.gap "30px" ]
+      , rule_ ".toastBar" [ CSS.flexWrap "wrap", CSS.justifyContent "center", CSS.maxWidth "94vw" ]
+      ]
+  , media_ (screen_ `and_` maxWidth_ (px 480))
+      [ rule_ ".brand" [ CSS.display "none" ]
+      ]
+  -- short landscape phones: single slim row, board gets the height back
+  , media_ (screen_ `and_` maxHeight_ (px 520))
+      [ rule_ ":root"
+          [ "--st" =: "min(56px, calc((100vw - 10px) / 15.4), calc((100dvh - 70px) / 12.1))" ]
+      , rule_ ".topbar" [ CSS.padding "4px 8px" ]
+      , rule_ ".btnLabel" [ CSS.display "none" ]
+      , rule_ ".brand" [ CSS.display "none" ]
+      , rule_ ".boardWrap" [ "inset" =: "44px 0 4px 0" ]
+      , rule_ ".board"
+          [ CSS.width "calc(var(--st) * 15 + 8px)"
+          , CSS.height "calc(var(--sth) * 8 + 34px)"
+          ]
       ]
   -- keyframes ------------------------------------------------------------------
   , keyframes_ "popIn"

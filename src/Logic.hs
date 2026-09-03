@@ -108,32 +108,41 @@ pairsOf ts = concatMap chunk (groupBy ((==) `on` matchKey) (sortOn matchKey ts))
 shuffleList :: [a] -> IO [a]
 shuffleList xs = do
   keys <- replicateRM (length xs)
-  pure (map snd (sortOn fst (zip keys xs)))
+  pure (shuffleWith keys xs)
+-----------------------------------------------------------------------------
+shuffleWith :: [Double] -> [a] -> [a]
+shuffleWith keys xs = map snd (sortOn fst (zip keys xs))
 -----------------------------------------------------------------------------
 -- | Deal by playing the game in reverse: repeatedly pull two random /free/
 -- positions off the full board and assign them the next matching pair.
 -- The removal order is itself a solution, so every deal is winnable.
+-- Pure so the test-suite can drive it with a deterministic supply; the
+-- result is in reverse-chronological assignment order.
+dealIntoWith :: [Double] -> [Pos] -> [Tile] -> Maybe [BTile]
+dealIntoWith supply positions tiles = go prs positions rest []
+  where
+    prs0 = pairsOf tiles
+    (keys, rest) = splitAt (length prs0) supply
+    prs = shuffleWith keys prs0
+    go [] _ _ acc = Just acc
+    go ((t1, t2) : more) remaining (r1 : r2 : rs) acc
+      | length free < 2 = Nothing
+      | otherwise =
+          go more
+             (filter (\p -> p /= p1 && p /= p2) remaining)
+             rs
+             (BTile p1 t1 : BTile p2 t2 : acc)
+      where
+        free = filter (isFreePos remaining) remaining
+        p1 = free !! floor (r1 * fromIntegral (length free))
+        free' = filter (/= p1) free
+        p2 = free' !! floor (r2 * fromIntegral (length free'))
+    go _ _ _ _ = Nothing -- randomness supply exhausted
+-----------------------------------------------------------------------------
 dealInto :: [Pos] -> [Tile] -> IO (Maybe [BTile])
 dealInto positions tiles = do
-  prs <- shuffleList (pairsOf tiles)
-  go prs positions []
-  where
-    go [] _ acc = pure (Just acc)
-    go ((t1, t2) : rest) remaining acc = do
-      let free = filter (isFreePos remaining) remaining
-      if length free < 2
-        then pure Nothing
-        else do
-          rs <- replicateRM 2
-          case rs of
-            [r1, r2] -> do
-              let p1 = free !! floor (r1 * fromIntegral (length free))
-                  free' = filter (/= p1) free
-                  p2 = free' !! floor (r2 * fromIntegral (length free'))
-              go rest
-                 (filter (\p -> p /= p1 && p /= p2) remaining)
-                 (BTile p1 t1 : BTile p2 t2 : acc)
-            _ -> pure Nothing
+  supply <- replicateRM (2 * length tiles)
+  pure (dealIntoWith supply positions tiles)
 -----------------------------------------------------------------------------
 -- | A fresh, solvable turtle deal.
 genDeal :: IO [BTile]

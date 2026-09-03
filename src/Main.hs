@@ -215,16 +215,22 @@ topbar m = H.div_ [ HP.class_ "topbar" ]
       , stat "♟" (ms (length (freePairs (board m))) <> " moves")
       ]
   , H.div_ [ HP.class_ "tbBtns" ]
-      [ H.button_ [ HP.class_ "iconBtn", HE.onClick Hint ] [ text "💡 hint" ]
-      , H.button_ [ HP.class_ "iconBtn", HE.onClick Undo ] [ text "↩ undo" ]
-      , H.button_ [ HP.class_ "iconBtn", HE.onClick Shuffle ] [ text "🔀 shuffle" ]
-      , H.button_ [ HP.class_ "iconBtn", HE.onClick ToggleSound ]
-          [ text (if soundOn m then "🔊 sound" else "🔇 muted") ]
-      , H.button_ [ HP.class_ "iconBtn", HE.onClick NewGame ] [ text "↺ new game" ]
+      [ iconBtn Hint "💡" "hint"
+      , iconBtn Undo "↩" "undo"
+      , iconBtn Shuffle "🔀" "shuffle"
+      , iconBtn ToggleSound
+          (if soundOn m then "🔊" else "🔇")
+          (if soundOn m then "sound" else "muted")
+      , iconBtn NewGame "↺" "new game"
       ]
   ]
   where
     stat icon v = H.span_ [] [ text (icon <> " "), H.b_ [] [ text v ] ]
+    iconBtn act icon label = H.button_
+      [ HP.class_ "iconBtn", HE.onClick act ]
+      [ text icon
+      , H.span_ [ HP.class_ "btnLabel" ] [ text (" " <> label) ]
+      ]
 -----------------------------------------------------------------------------
 boardView :: Model -> View () Model Action
 boardView m = H.div_ [ HP.class_ "boardWrap" ]
