@@ -258,6 +258,104 @@ skin = sheet_
       ]
   , selector_ ".statRow b" [ "color" =: "var(--gold)", "font-variant-numeric" =: "tabular-nums" ]
   , selector_ ".panel .btn" [ CSS.marginTop "22px" ]
+  -- how-to-play modal ---------------------------------------------------------
+  , selector_ ".overlay.help"
+      [ CSS.zIndex 120
+      , CSS.alignItems "flex-start"
+      , CSS.padding "min(7vh, 60px) 14px 14px"
+      ]
+  , selector_ ".helpPanel"
+      [ CSS.textAlign "left"
+      , CSS.maxWidth "min(94vw, 640px)"
+      , CSS.maxHeight "min(86dvh, 780px)"
+      , CSS.overflowY "auto"
+      , CSS.position "relative"
+      , CSS.padding "26px 34px 28px"
+      , CSS.animation "dropIn .45s cubic-bezier(.2,.9,.25,1.15) backwards"
+      , "overscroll-behavior" =: "contain"
+      , "scrollbar-width" =: "thin"
+      , "scrollbar-color" =: "rgba(232,201,106,.4) transparent"
+      ]
+  , selector_ ".helpPanel::-webkit-scrollbar" [ CSS.width "8px" ]
+  , selector_ ".helpPanel::-webkit-scrollbar-thumb"
+      [ CSS.background "rgba(232,201,106,.35)"
+      , CSS.borderRadius (CSS.px 8)
+      ]
+  , selector_ ".helpPanel::-webkit-scrollbar-track" [ CSS.background "transparent" ]
+  , selector_ ".helpClose"
+      [ CSS.position "absolute"
+      , CSS.top "10px"
+      , CSS.right "14px"
+      , CSS.background "none"
+      , CSS.border "none"
+      , "color" =: "#9fb8a9"
+      , CSS.fontSize "22px"
+      , CSS.cursor "pointer"
+      , CSS.padding "6px 8px"
+      , CSS.transition "color .15s ease, transform .15s ease"
+      ]
+  , selector_ ".helpClose:hover"
+      [ "color" =: "var(--gold)", CSS.transform "scale(1.15)" ]
+  , selector_ ".helpH"
+      [ CSS.fontSize "22px"
+      , CSS.fontWeight "900"
+      , CSS.letterSpacing ".2em"
+      , "color" =: "var(--gold)"
+      , CSS.margin "0 0 2px"
+      ]
+  , selector_ ".helpSub"
+      [ "color" =: "#9fb8a9"
+      , CSS.fontSize "13px"
+      , CSS.letterSpacing ".1em"
+      , CSS.marginBottom "10px"
+      ]
+  , selector_ ".helpSec"
+      [ "color" =: "var(--gold)"
+      , CSS.fontSize "12px"
+      , CSS.fontWeight "800"
+      , CSS.letterSpacing ".24em"
+      , CSS.margin "18px 0 4px"
+      ]
+  , selector_ ".helpP"
+      [ "color" =: "#dfe8e0"
+      , CSS.fontSize "14px"
+      , CSS.lineHeight "1.6"
+      , CSS.margin "4px 0"
+      ]
+  , selector_ ".helpRow"
+      [ CSS.display "flex"
+      , CSS.alignItems "center"
+      , CSS.gap "10px"
+      , CSS.margin "9px 0"
+      ]
+  , selector_ ".helpRow .tile" [ CSS.width "32px" ]
+  , selector_ ".helpCap"
+      [ "color" =: "#cfe0d5", CSS.fontSize "13.5px" ]
+  , selector_ ".mark" [ CSS.fontWeight "900", CSS.fontSize "18px" ]
+  , selector_ ".mark.ok" [ "color" =: "#7fd49a" ]
+  , selector_ ".mark.no" [ "color" =: "#e46a6a" ]
+  , selector_ ".famStrip"
+      [ CSS.display "flex"
+      , CSS.gap "12px"
+      , CSS.flexWrap "wrap"
+      , CSS.marginTop "8px"
+      ]
+  , selector_ ".fam"
+      [ CSS.display "flex"
+      , CSS.flexDirection "column"
+      , CSS.alignItems "center"
+      , CSS.gap "5px"
+      , CSS.fontSize "10px"
+      , CSS.letterSpacing ".06em"
+      , "color" =: "#9fb8a9"
+      ]
+  , selector_ ".fam .tile" [ CSS.width "30px" ]
+  , selector_ ".howBtn"
+      [ CSS.fontSize "13px"
+      , CSS.padding "10px 30px"
+      , CSS.marginTop "10px"
+      , CSS.animation "riseIn .7s .4s cubic-bezier(.2,.9,.25,1.2) backwards"
+      ]
   -- title screen ---------------------------------------------------------------
   , selector_ ".titleWrap"
       [ CSS.position "fixed"
@@ -330,6 +428,8 @@ skin = sheet_
           , CSS.height "calc(var(--sth) * 8 + 34px)"
           ]
       , rule_ ".panel" [ CSS.padding "22px 26px" ]
+      , rule_ ".helpPanel" [ CSS.padding "18px 18px 20px" ]
+      , rule_ ".overlay.help" [ CSS.padding "10px 8px 8px" ]
       , rule_ ".statRow" [ CSS.gap "30px" ]
       , rule_ ".toastBar" [ CSS.flexWrap "wrap", CSS.justifyContent "center", CSS.maxWidth "94vw" ]
       ]
@@ -367,6 +467,10 @@ skin = sheet_
       [ from_ [ CSS.opacity 0 ], to_ [ CSS.opacity 1 ] ]
   , keyframes_ "panelIn"
       [ from_ [ CSS.transform "translateY(26px) scale(.92)", CSS.opacity 0 ]
+      , to_   [ CSS.transform "translateY(0) scale(1)", CSS.opacity 1 ]
+      ]
+  , keyframes_ "dropIn"
+      [ from_ [ CSS.transform "translateY(-52px) scale(.97)", CSS.opacity 0 ]
       , to_   [ CSS.transform "translateY(0) scale(1)", CSS.opacity 1 ]
       ]
   , keyframes_ "riseIn"

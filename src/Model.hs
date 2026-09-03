@@ -54,6 +54,7 @@ data Model = Model
   , stuck     :: Bool              -- ^ no matching free pair remains
   , phase     :: Phase
   , soundOn   :: Bool
+  , showHelp  :: Bool              -- ^ the how-to-play modal is open
   } deriving (Eq, Show)
 -----------------------------------------------------------------------------
 data Action
@@ -69,6 +70,8 @@ data Action
   | Shuffled [BTile]
   | Tick
   | ToggleSound
+  | ShowHelp
+  | CloseHelp
 -----------------------------------------------------------------------------
 initialModel :: Model
 initialModel = Model
@@ -84,6 +87,7 @@ initialModel = Model
   , stuck     = False
   , phase     = Title
   , soundOn   = True
+  , showHelp  = False
   }
 -----------------------------------------------------------------------------
 -- | Find the board tile at a position.

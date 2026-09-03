@@ -64,7 +64,15 @@ updateModel = \case
 
   Tick ->
     modify $ \m ->
-      if phase m == Playing then m { timeSec = timeSec m + 1 } else m
+      if phase m == Playing && not (showHelp m)
+        then m { timeSec = timeSec m + 1 }
+        else m
+
+  ShowHelp ->
+    modify (\m -> m { showHelp = True })
+
+  CloseHelp ->
+    modify (\m -> m { showHelp = False })
 
   ClickTile pos -> do
     m <- get
@@ -170,13 +178,15 @@ playFx name = do
 -----------------------------------------------------------------------------
 viewModel :: () -> () -> Model -> View () Model Action
 viewModel _ _ m = case phase m of
-  Title -> titleView
+  Title -> H.div_ []
+    ( titleView : [ helpOverlay | showHelp m ] )
   _ -> H.div_ []
     ( [ topbar m
       , boardView m
       ]
       ++ [ stuckToast | stuck m, phase m == Playing ]
       ++ [ winOverlay m | phase m == Won ]
+      ++ [ helpOverlay | showHelp m ]
     )
 -----------------------------------------------------------------------------
 titleView :: View () Model Action
@@ -196,6 +206,9 @@ titleView = H.div_ [ HP.class_ "titleWrap" ] $
   , H.button_
       [ HP.class_ "btn startBtn", HE.onClick StartGame ]
       [ text "START GAME" ]
+  , H.button_
+      [ HP.class_ "btn ghost howBtn", HE.onClick ShowHelp ]
+      [ text "HOW TO PLAY" ]
   , H.div_ [ HP.class_ "titleHint" ]
       [ text "clear the turtle · match free pairs · built with miso 🍜" ]
   ]
@@ -215,7 +228,8 @@ topbar m = H.div_ [ HP.class_ "topbar" ]
       , stat "♟" (ms (length (freePairs (board m))) <> " moves")
       ]
   , H.div_ [ HP.class_ "tbBtns" ]
-      [ iconBtn Hint "💡" "hint"
+      [ iconBtn ShowHelp "❓" "how to play"
+      , iconBtn Hint "💡" "hint"
       , iconBtn Undo "↩" "undo"
       , iconBtn Shuffle "🔀" "shuffle"
       , iconBtn ToggleSound
@@ -289,6 +303,66 @@ stuckToast = H.div_ [ HP.class_ "toastBar" ]
   , H.button_ [ HP.class_ "btn ghost", HE.onClick Undo ] [ text "UNDO" ]
   , H.button_ [ HP.class_ "btn", HE.onClick Shuffle ] [ text "SHUFFLE" ]
   ]
+-----------------------------------------------------------------------------
+helpOverlay :: View () Model Action
+helpOverlay = H.div_ [ HP.class_ "overlay help" ]
+  [ H.div_ [ HP.class_ "panel helpPanel" ]
+      [ H.button_ [ HP.class_ "helpClose", HE.onClick CloseHelp ] [ text "✕" ]
+      , H.div_ [ HP.class_ "helpH" ] [ text "HOW TO PLAY" ]
+      , H.div_ [ HP.class_ "helpSub" ]
+          [ text "mahjong solitaire · the classic turtle" ]
+      , sec "THE OBJECTIVE"
+      , para $
+          "Clear all 144 tiles from the board by removing them two at a "
+          <> "time as matching pairs. The tiles are stacked five layers "
+          <> "deep — you win when nothing is left."
+      , sec "FREE TILES"
+      , para $
+          "Only free tiles can be picked up: nothing may rest on top of "
+          <> "them, and at least one side — left or right — must be open. "
+          <> "Locked tiles are dimmed until you dig them out."
+      , sec "MATCHING PAIRS"
+      , matchRow True (Suited Sou 7) (Suited Sou 7)
+          "identical tiles always match"
+      , matchRow True (DragonTile Red) (DragonTile Red)
+          "…winds and dragons too"
+      , matchRow True (FlowerTile 1) (FlowerTile 3)
+          "any flower matches any flower 梅蘭菊竹"
+      , matchRow True (SeasonTile 1) (SeasonTile 4)
+          "any season matches any season 春夏秋冬"
+      , matchRow False (Suited Man 1) (Suited Pin 1)
+          "same number, different suit — never a match"
+      , sec "THE TILES"
+      , H.div_ [ HP.class_ "famStrip" ]
+          [ fam (Suited Man 5) "characters"
+          , fam (Suited Pin 5) "circles"
+          , fam (Suited Sou 5) "bamboo"
+          , fam (WindTile East) "winds"
+          , fam (DragonTile Green) "dragons"
+          , fam (FlowerTile 2) "flowers"
+          , fam (SeasonTile 2) "seasons"
+          ]
+      , sec "HELPERS"
+      , para $
+          "💡 hint shows an available pair · ↩ undo rewinds as far as "
+          <> "you like · 🔀 shuffle re-deals the remaining tiles and always "
+          <> "leaves a winnable board. Every fresh deal is guaranteed "
+          <> "solvable — and the clock pauses while you read this."
+      , H.button_ [ HP.class_ "btn", HE.onClick CloseHelp ] [ text "GOT IT" ]
+      ]
+  ]
+  where
+    sec s = H.div_ [ HP.class_ "helpSec" ] [ text s ]
+    para s = H.p_ [ HP.class_ "helpP" ] [ text s ]
+    matchRow ok a b caption = H.div_ [ HP.class_ "helpRow" ]
+      [ tileDiv "" [] a
+      , tileDiv "" [] b
+      , H.span_ [ HP.class_ (if ok then "mark ok" else "mark no") ]
+          [ text (if ok then "✓" else "✕") ]
+      , H.span_ [ HP.class_ "helpCap" ] [ text caption ]
+      ]
+    fam t label = H.div_ [ HP.class_ "fam" ]
+      [ tileDiv "" [] t, H.span_ [] [ text label ] ]
 -----------------------------------------------------------------------------
 winOverlay :: Model -> View () Model Action
 winOverlay m = H.div_ [ HP.class_ "overlay" ]
