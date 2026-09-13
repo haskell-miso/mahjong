@@ -29,20 +29,20 @@ w_ = textProp "width"
 h_ = textProp "height"
 -----------------------------------------------------------------------------
 -- | A face-up tile with extra classes on the wrapper div.
-tileDiv :: MisoString -> [Attribute model action] -> Tile -> View c model action
+tileDiv :: MisoString -> [Attribute model action] -> Tile -> View c props model action
 tileDiv cls attrs t =
   H.div_ (HP.class_ ("tile " <> cls) : attrs) [ tileFace t ]
 -----------------------------------------------------------------------------
 -- | A face-down tile.
-tileBackDiv :: MisoString -> [Attribute model action] -> View c model action
+tileBackDiv :: MisoString -> [Attribute model action] -> View c props model action
 tileBackDiv cls attrs =
   H.div_ (HP.class_ ("tile back " <> cls) : attrs) []
 -----------------------------------------------------------------------------
 -- | The engraved face of a tile.
-tileFace :: Tile -> View c model action
+tileFace :: Tile -> View c props model action
 tileFace t = S.svg_ [ SP.viewBox_ "0 0 60 84" ] (faceOf t)
 -----------------------------------------------------------------------------
-faceOf :: Tile -> [View c model action]
+faceOf :: Tile -> [View c props model action]
 faceOf (Suited Man n) =
   [ glyph 30 34 30 ink (manNumeral n)
   , glyph 30 72 27 red "萬"
@@ -76,7 +76,7 @@ faceOf (SeasonTile n) =
   , glyph 49 18 12 red (ms n)
   ]
 -----------------------------------------------------------------------------
-glyph :: Int -> Int -> Int -> MisoString -> MisoString -> View c model action
+glyph :: Int -> Int -> Int -> MisoString -> MisoString -> View c props model action
 glyph x y size color str =
   S.text_
     [ SP.x_ (ms x), SP.y_ (ms y)
@@ -103,7 +103,7 @@ windChar North = "北"
 -----------------------------------------------------------------------------
 -- * Pin (circle) faces
 -----------------------------------------------------------------------------
-pip :: Int -> Int -> Int -> MisoString -> View c model action
+pip :: Int -> Int -> Int -> MisoString -> View c props model action
 pip x y r color = S.g_ []
   [ S.circle_
       [ SP.cx_ (ms x), SP.cy_ (ms y), SP.r_ (ms r)
@@ -121,7 +121,7 @@ pip x y r color = S.g_ []
       ]
   ]
 -----------------------------------------------------------------------------
-pinFace :: Int -> [View c model action]
+pinFace :: Int -> [View c props model action]
 pinFace 1 =
   [ S.circle_
       [ SP.cx_ "30", SP.cy_ "42", SP.r_ "19"
@@ -149,7 +149,7 @@ pinFace n = [ pip x y r c | (x, y, c) <- spots ]
 -----------------------------------------------------------------------------
 -- * Sou (bamboo) faces
 -----------------------------------------------------------------------------
-stick :: Int -> Int -> MisoString -> View c model action
+stick :: Int -> Int -> MisoString -> View c props model action
 stick x y color = S.g_ []
   [ S.rect_
       [ SP.x_ (ms (x - 4)), SP.y_ (ms (y - 9))
@@ -167,7 +167,7 @@ stick x y color = S.g_ []
       ]
   ]
 -----------------------------------------------------------------------------
-souFace :: Int -> [View c model action]
+souFace :: Int -> [View c props model action]
 souFace 1 =
   -- a stylized bamboo shoot with two leaves
   [ S.rect_
