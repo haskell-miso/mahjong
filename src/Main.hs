@@ -176,8 +176,8 @@ playFx name = do
 -----------------------------------------------------------------------------
 -- * View
 -----------------------------------------------------------------------------
-viewModel :: () -> () -> Model -> View () Model Action
-viewModel _ _ m = case phase m of
+viewModel :: Model -> View () () Model Action
+viewModel m = case phase m of
   Title -> H.div_ []
     ( titleView : [ helpOverlay | showHelp m ] )
   _ -> H.div_ []
@@ -189,7 +189,7 @@ viewModel _ _ m = case phase m of
       ++ [ helpOverlay | showHelp m ]
     )
 -----------------------------------------------------------------------------
-titleView :: View () Model Action
+titleView :: View () () Model Action
 titleView = H.div_ [ HP.class_ "titleWrap" ] $
   [ deco t x y r d
   | (t, x, y, r, d) <-
@@ -218,7 +218,7 @@ titleView = H.div_ [ HP.class_ "titleWrap" ] $
           [ CSS.left x, CSS.top y, "--fr" =: r, CSS.animationDelay d ]
       ] t
 -----------------------------------------------------------------------------
-topbar :: Model -> View () Model Action
+topbar :: Model -> View () () Model Action
 topbar m = H.div_ [ HP.class_ "topbar" ]
   [ H.div_ [ HP.class_ "brand" ]
       [ text "MISO MAHJONG ", H.small_ [] [ text "· solitaire" ] ]
@@ -246,13 +246,13 @@ topbar m = H.div_ [ HP.class_ "topbar" ]
       , H.span_ [ HP.class_ "btnLabel" ] [ text (" " <> label) ]
       ]
 -----------------------------------------------------------------------------
-boardView :: Model -> View () Model Action
+boardView :: Model -> View () () Model Action
 boardView m = H.div_ [ HP.class_ "boardWrap" ]
   [ H.div_ [ HP.class_ "board" ] $
       map (stileView m) (board m) ++ map vanishView (vanishing m)
   ]
 -----------------------------------------------------------------------------
-stileView :: Model -> BTile -> View () Model Action
+stileView :: Model -> BTile -> View () () Model Action
 stileView m bt = tileDiv cls
   [ HE.onClick (ClickTile pos)
   , CSS.style_ (posStyle pos 0)
@@ -273,7 +273,7 @@ stileView m bt = tileDiv cls
       , clsWhen ((hinted || shakePos m == Just pos) && alt) "alt"
       ]
 -----------------------------------------------------------------------------
-vanishView :: (Int, BTile) -> View () Model Action
+vanishView :: (Int, BTile) -> View () () Model Action
 vanishView (_, bt) = tileDiv "stile vanish"
   [ CSS.style_ (posStyle (btPos bt) 50000 ++ [ CSS.animationDelay "0ms" ]) ]
   (btKind bt)
@@ -297,14 +297,14 @@ clsWhen :: Bool -> MisoString -> MisoString
 clsWhen True c = c
 clsWhen False _ = ""
 -----------------------------------------------------------------------------
-stuckToast :: View () Model Action
+stuckToast :: View () () Model Action
 stuckToast = H.div_ [ HP.class_ "toastBar" ]
   [ H.span_ [ HP.class_ "toastMsg" ] [ text "行き詰まり — no moves left" ]
   , H.button_ [ HP.class_ "btn ghost", HE.onClick Undo ] [ text "UNDO" ]
   , H.button_ [ HP.class_ "btn", HE.onClick Shuffle ] [ text "SHUFFLE" ]
   ]
 -----------------------------------------------------------------------------
-helpOverlay :: View () Model Action
+helpOverlay :: View () () Model Action
 helpOverlay = H.div_ [ HP.class_ "overlay help" ]
   [ H.div_ [ HP.class_ "panel helpPanel" ]
       [ H.button_ [ HP.class_ "helpClose", HE.onClick CloseHelp ] [ text "✕" ]
@@ -364,7 +364,7 @@ helpOverlay = H.div_ [ HP.class_ "overlay help" ]
     fam t label = H.div_ [ HP.class_ "fam" ]
       [ tileDiv "" [] t, H.span_ [] [ text label ] ]
 -----------------------------------------------------------------------------
-winOverlay :: Model -> View () Model Action
+winOverlay :: Model -> View () () Model Action
 winOverlay m = H.div_ [ HP.class_ "overlay" ]
   [ H.div_ [ HP.class_ "panel" ]
       [ H.div_ [ HP.class_ "winTitle" ] [ text "CLEARED!" ]
@@ -376,7 +376,7 @@ winOverlay m = H.div_ [ HP.class_ "overlay" ]
       ]
   ]
   where
-    statRow :: Int -> MisoString -> MisoString -> View () Model Action
+    statRow :: Int -> MisoString -> MisoString -> View () () Model Action
     statRow k label v = H.div_
       [ HP.class_ "statRow"
       , CSS.style_ [ CSS.animationDelay (ms (200 + k * 130) <> "ms") ]
